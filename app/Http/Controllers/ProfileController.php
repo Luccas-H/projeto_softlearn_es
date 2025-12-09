@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
@@ -36,6 +38,28 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
+    /**
+ * Update the user's password.
+ */
+public function updatePassword(Request $request): RedirectResponse
+{
+    $validated = $request->validate([
+        'current_password' => ['required', 'current_password'],
+        'password' => ['required', Password::min(8)->letters()->numbers(), 'confirmed'],
+    ], [
+        'current_password.current_password' => 'A senha atual está incorreta.',
+        'password.min' => 'A senha deve ter no mínimo 8 caracteres.',
+        'password.letters' => 'A senha deve conter letras.',
+        'password.numbers' => 'A senha deve conter números.',
+        'password.confirmed' => 'As senhas não coincidem.',
+    ]);
+
+    $request->user()->update([
+        'password' => Hash::make($validated['password'])
+    ]);
+
+    return Redirect::route('profile.edit')->with('status', 'password-updated');
+}
 
     /**
      * Delete the user's account.
